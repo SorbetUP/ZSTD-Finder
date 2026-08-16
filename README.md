@@ -1,31 +1,33 @@
 # ZSTD-Finder
 
-ZSTD-Finder is a macOS-oriented, read-only archive format and engine for large
-folders that must stay browsable without expanding the whole archive first.
+ZSTD-Finder is a macOS-oriented, read-only archive format and filesystem adapter
+for large folders that must stay browsable without expanding the whole archive.
 
-The important distinction is that `.zstf` is **not** `tar.zst`. Every regular
-file is split into independently addressable chunks, so callers can read one
-photo or a byte range of one large video without decoding the files that came
-before it.
+A `.zstf` archive is deliberately **not** `tar.zst`. Every regular file is split
+into independently addressable chunks, so Finder can request one photo or a byte
+range of one large video without decoding the files or chunks that came before
+it.
 
 ## V1 status
 
-The `feat/read-only-v1` branch contains the first read-only storage engine:
+The `feat/read-only-v1` branch contains the first read-only implementation:
 
 - independent Zstd chunks, 1 MiB by default;
 - automatic raw storage for incompressible chunks;
-- indexed lookup by path;
-- random `read_at(path, offset, length)` access;
+- indexed path lookup and random `read_at(path, offset, length)` access;
 - XXH3 checksums per chunk and on the index;
 - files, directories, empty files, and symbolic links;
-- safe extraction and archive verification;
-- CLI for pack/list/verify/read/cat/extract;
-- CI on Linux and macOS in debug and release modes;
-- clippy, rustfmt, and rustdoc quality gates.
+- bounds/path validation, safe extraction, and full archive verification;
+- CLI for `pack`, `list`, `verify`, `read`, `cat`, and `extract`;
+- panic-safe C ABI and Swift bridge for native macOS code;
+- read-only FSKit volume adapter: lookup, directory enumeration, attributes,
+  symlinks, and random file reads; every mutation returns `EROFS`;
+- CI tests in debug and release on Linux and macOS 15;
+- native C/Swift/FSKit compile gate on macOS 26;
+- `rustfmt`, Clippy with warnings denied, Rustdoc, and extension metadata gates.
 
-The archive engine is intentionally separated from Finder mounting. The native
-macOS frontend can call the same range-read API from an FSKit read-only volume,
-without changing the archive format.
+The path-backed FSKit frontend currently targets **macOS 26+**. The storage
+engine itself is independent of FSKit and remains tested on macOS 15 as well.
 
 ## CLI
 
@@ -40,15 +42,32 @@ cargo run --release -- extract Pictures.zstf ./restored
 Use `--chunk-size` to change random-access granularity and `--level` to change
 the Zstd compression level.
 
-## Design
+## Architecture
 
-See [`docs/FORMAT.md`](docs/FORMAT.md) for the v1 on-disk format and validation
-rules.
+```text
+.zstf archive
+    |
+    +-- Rust archive engine: index + independently compressed chunks
+    |       |
+    |       +-- read_at(path, offset, length)
+    |
+    +-- stable C ABI
+            |
+            +-- Swift bridge
+                    |
+                    +-- read-only FSKit volume
+                            |
+                            +-- Finder / Quick Look / applications
+```
 
-## Finder integration
+See [`docs/FORMAT.md`](docs/FORMAT.md) for the v1 on-disk format and
+[`docs/MACOS.md`](docs/MACOS.md) for the native integration boundary.
 
-The target native integration is an FSKit unary file-system extension on modern
-macOS. It will expose a `.zstf` archive as a read-only mounted volume in Finder
-and translate file reads directly to the core `read_at` operation. The storage
-engine and its corruption/seek tests land first so the filesystem layer stays a
-thin adapter rather than owning archive logic.
+## Installation status
+
+The V1 filesystem implementation and its extension metadata are present and are
+compiled in CI. The repository does **not yet ship a signed installable host
+`.app`/`.appex` bundle**. Installing an FSKit module requires Apple extension
+packaging, entitlements, code signing, and activation on the target Mac. Keeping
+that packaging step separate prevents CI from claiming that Finder mounting was
+runtime-tested when the runner cannot perform a real user installation.

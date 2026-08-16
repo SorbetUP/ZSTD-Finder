@@ -49,10 +49,17 @@ jobs:
       - run: cargo build --release
       - name: Validate C header
         run: clang -fsyntax-only -x c include/zstd_finder.h
+      - name: Validate FSKit extension metadata
+        run: |
+          plutil -lint macos/FSKitExtension/Info.plist
+          plutil -lint macos/FSKitExtension/ZSTDFinderFS.entitlements
+          test "$(plutil -extract EXAppExtensionAttributes.FSShortName raw macos/FSKitExtension/Info.plist)" = "zstf"
+          test "$(plutil -extract com.apple.developer.fskit.fsmodule raw macos/FSKitExtension/ZSTDFinderFS.entitlements)" = "true"
       - name: Type-check Swift bridge and read-only FSKit adapter
         run: |
           xcrun swiftc \
             -typecheck \
+            -warnings-as-errors \
             -parse-as-library \
             -target arm64-apple-macosx26.0 \
             -framework FSKit \
