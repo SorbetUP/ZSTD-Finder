@@ -1,0 +1,64 @@
+name: Fix Clippy once
+
+on:
+  push:
+    branches: ["feat/read-only-v1"]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/read-only-v1
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Simplify index map types
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("src/archive.rs")
+          s = p.read_text()
+          anchor = "pub struct Archive {\n"
+          aliases = (
+              "type EntryLookup = HashMap<String, usize>;\n"
+              "type DirectoryChildren = HashMap<String, Vec<usize>>;\n"
+              "type ValidatedIndex = (EntryLookup, DirectoryChildren);\n\n"
+          )
+          if aliases not in s:
+              assert anchor in s
+              s = s.replace(anchor, aliases + anchor, 1)
+          s = s.replace("    lookup: HashMap<String, usize>,\n", "    lookup: EntryLookup,\n")
+          s = s.replace("    children: HashMap<String, Vec<usize>>,\n", "    children: DirectoryChildren,\n")
+          s = s.replace(
+              ") -> Result<(HashMap<String, usize>, HashMap<String, Vec<usize>>)> {",
+              ") -> Result<ValidatedIndex> {",
+          )
+          s = s.replace(
+              "    let mut children: HashMap<String, Vec<usize>> = HashMap::new();\n",
+              "    let mut children = DirectoryChildren::new();\n",
+          )
+          p.write_text(s)
+          PY
+          cargo fmt --all
+      - name: Validate before commit
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --all-targets --all-features -- -D warnings
+          cargo test --all-targets --all-features
+      - name: Commit fix
+        run: |
+          if git diff --quiet; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/archive.rs
+          git commit -m "refactor: simplify archive index types"
+          git push origin HEAD:feat/read-only-v1
