@@ -40,8 +40,8 @@ jobs:
       - run: cargo test --release --all-targets --all-features
 
   native-macos:
-    name: FSKit + native bridge
-    runs-on: macos-15
+    name: FSKit + native bridge (macOS 26)
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -54,7 +54,7 @@ jobs:
           xcrun swiftc \
             -typecheck \
             -parse-as-library \
-            -target arm64-apple-macosx15.4 \
+            -target arm64-apple-macosx26.0 \
             -framework FSKit \
             -import-objc-header include/zstd_finder.h \
             macos/Shared/ZSTFArchiveBridge.swift \
