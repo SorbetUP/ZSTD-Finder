@@ -1,5 +1,6 @@
 mod archive;
 mod error;
+pub mod ffi;
 mod format;
 mod path;
 mod writer;
