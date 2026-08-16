@@ -53,8 +53,18 @@ jobs:
         run: |
           plutil -lint macos/FSKitExtension/Info.plist
           plutil -lint macos/FSKitExtension/ZSTDFinderFS.entitlements
-          test "$(plutil -extract EXAppExtensionAttributes.FSShortName raw macos/FSKitExtension/Info.plist)" = "zstf"
-          test "$(plutil -extract com.apple.developer.fskit.fsmodule raw macos/FSKitExtension/ZSTDFinderFS.entitlements)" = "true"
+          python3 - <<'PY'
+          import plistlib
+          from pathlib import Path
+
+          with Path("macos/FSKitExtension/Info.plist").open("rb") as stream:
+              info = plistlib.load(stream)
+          with Path("macos/FSKitExtension/ZSTDFinderFS.entitlements").open("rb") as stream:
+              entitlements = plistlib.load(stream)
+
+          assert info["EXAppExtensionAttributes"]["FSShortName"] == "zstf"
+          assert entitlements["com.apple.developer.fskit.fsmodule"] is True
+          PY
       - name: Type-check Swift bridge and read-only FSKit adapter
         run: |
           xcrun swiftc \
