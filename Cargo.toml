@@ -10,6 +10,7 @@ repository = "https://github.com/SorbetUP/ZSTD-Finder"
 [lib]
 name = "zstd_finder"
 path = "src/lib.rs"
+crate-type = ["rlib", "staticlib"]
 
 [[bin]]
 name = "zstd-finder"
