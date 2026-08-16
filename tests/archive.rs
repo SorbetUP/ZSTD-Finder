@@ -155,9 +155,7 @@ fn corruption_is_detected_only_when_affected_chunk_is_read() {
     file.flush().unwrap();
 
     let archive = Archive::open(&archive_path).unwrap();
-    let second_chunk = archive
-        .read_at("data.bin", TEST_CHUNK as u64, 32)
-        .unwrap();
+    let second_chunk = archive.read_at("data.bin", TEST_CHUNK as u64, 32).unwrap();
     assert_eq!(second_chunk, vec![b'A'; 32]);
     assert!(archive.read_at("data.bin", 0, 1).is_err());
 }

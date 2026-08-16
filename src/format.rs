@@ -43,13 +43,9 @@ impl Header {
             flags: u16::from_le_bytes(bytes[10..12].try_into().expect("fixed slice")),
             chunk_size: u32::from_le_bytes(bytes[12..16].try_into().expect("fixed slice")),
             index_offset: u64::from_le_bytes(bytes[16..24].try_into().expect("fixed slice")),
-            index_stored_len: u64::from_le_bytes(
-                bytes[24..32].try_into().expect("fixed slice"),
-            ),
+            index_stored_len: u64::from_le_bytes(bytes[24..32].try_into().expect("fixed slice")),
             index_raw_len: u64::from_le_bytes(bytes[32..40].try_into().expect("fixed slice")),
-            index_checksum: u64::from_le_bytes(
-                bytes[40..48].try_into().expect("fixed slice"),
-            ),
+            index_checksum: u64::from_le_bytes(bytes[40..48].try_into().expect("fixed slice")),
         })
     }
 }

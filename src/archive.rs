@@ -27,7 +27,9 @@ impl Archive {
         let mut file = File::open(path)?;
         let file_len = file.metadata()?.len();
         if file_len < HEADER_SIZE as u64 {
-            return Err(Error::InvalidFormat("file is smaller than the header".into()));
+            return Err(Error::InvalidFormat(
+                "file is smaller than the header".into(),
+            ));
         }
 
         let mut header_bytes = [0_u8; HEADER_SIZE];
@@ -195,9 +197,9 @@ impl Archive {
                 for child in &self.index.entries {
                     if child.path.starts_with(&prefix) {
                         match child.kind {
-                            EntryKind::Directory => {
-                                fs::create_dir_all(destination.join(path_from_archive(&child.path)))?
-                            }
+                            EntryKind::Directory => fs::create_dir_all(
+                                destination.join(path_from_archive(&child.path)),
+                            )?,
                             EntryKind::File => self.extract_file(child, destination)?,
                             EntryKind::Symlink => self.extract_symlink(child, destination)?,
                         }
@@ -221,16 +223,16 @@ impl Archive {
             file.read_exact(&mut stored)?;
         }
 
-        let decoded = match chunk.codec {
-            ChunkCodec::Stored => stored,
-            ChunkCodec::Zstd => zstd::bulk::decompress(&stored, chunk.raw_len as usize).map_err(
-                |error| Error::CorruptChunk {
-                    path: path.to_owned(),
-                    chunk: chunk_index,
-                    reason: format!("Zstd decode failed: {error}"),
-                },
-            )?,
-        };
+        let decoded =
+            match chunk.codec {
+                ChunkCodec::Stored => stored,
+                ChunkCodec::Zstd => zstd::bulk::decompress(&stored, chunk.raw_len as usize)
+                    .map_err(|error| Error::CorruptChunk {
+                        path: path.to_owned(),
+                        chunk: chunk_index,
+                        reason: format!("Zstd decode failed: {error}"),
+                    })?,
+            };
 
         if decoded.len() != chunk.raw_len as usize {
             return Err(Error::CorruptChunk {
@@ -275,9 +277,10 @@ impl Archive {
         if let Some(parent) = target.parent() {
             fs::create_dir_all(parent)?;
         }
-        let link_target = entry.symlink_target.as_deref().ok_or_else(|| {
-            Error::InvalidFormat(format!("symlink {} has no target", entry.path))
-        })?;
+        let link_target = entry
+            .symlink_target
+            .as_deref()
+            .ok_or_else(|| Error::InvalidFormat(format!("symlink {} has no target", entry.path)))?;
         symlink(link_target, target)?;
         Ok(())
     }
@@ -398,7 +401,10 @@ fn validate_index(
             continue;
         }
         let parent_index = lookup.get(parent).copied().ok_or_else(|| {
-            Error::InvalidFormat(format!("missing parent directory {parent} for {}", entry.path))
+            Error::InvalidFormat(format!(
+                "missing parent directory {parent} for {}",
+                entry.path
+            ))
         })?;
         if index.entries[parent_index].kind != EntryKind::Directory {
             return Err(Error::InvalidFormat(format!(
@@ -417,11 +423,7 @@ fn validate_index(
     Ok((lookup, children))
 }
 
-fn validate_file_entry(
-    entry: &Entry,
-    header: Header,
-    next_payload_offset: &mut u64,
-) -> Result<()> {
+fn validate_file_entry(entry: &Entry, header: Header, next_payload_offset: &mut u64) -> Result<()> {
     if entry.symlink_target.is_some() {
         return Err(Error::InvalidFormat(format!(
             "regular file has a symlink target: {}",

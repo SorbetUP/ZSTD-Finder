@@ -9,8 +9,8 @@ use xxhash_rust::xxh3::xxh3_64;
 
 use crate::error::{Error, Result};
 use crate::format::{
-    ArchiveIndex, ChunkCodec, ChunkRef, Entry, EntryKind, Header, UnixTime,
-    DEFAULT_CHUNK_SIZE, FORMAT_VERSION, HEADER_SIZE, MAX_CHUNK_SIZE, MIN_CHUNK_SIZE,
+    ArchiveIndex, ChunkCodec, ChunkRef, Entry, EntryKind, Header, UnixTime, DEFAULT_CHUNK_SIZE,
+    FORMAT_VERSION, HEADER_SIZE, MAX_CHUNK_SIZE, MIN_CHUNK_SIZE,
 };
 use crate::path::path_to_archive;
 
@@ -65,7 +65,10 @@ pub fn pack_directory(
     }
 
     let parent = destination.parent().ok_or_else(|| {
-        Error::InvalidPath(format!("destination has no parent: {}", destination.display()))
+        Error::InvalidPath(format!(
+            "destination has no parent: {}",
+            destination.display()
+        ))
     })?;
     fs::create_dir_all(parent)?;
 
