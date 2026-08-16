@@ -40,7 +40,7 @@ jobs:
       - run: cargo test --release --all-targets --all-features
 
   native-macos:
-    name: native macOS bridge
+    name: FSKit + native bridge
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -49,13 +49,15 @@ jobs:
       - run: cargo build --release
       - name: Validate C header
         run: clang -fsyntax-only -x c include/zstd_finder.h
-      - name: Type-check Swift bridge
+      - name: Type-check Swift bridge and read-only FSKit adapter
         run: |
           xcrun swiftc \
             -typecheck \
             -parse-as-library \
+            -framework FSKit \
             -import-objc-header include/zstd_finder.h \
-            macos/Shared/ZSTFArchiveBridge.swift
+            macos/Shared/ZSTFArchiveBridge.swift \
+            macos/FSKitExtension/*.swift
 
   docs:
     name: docs
