@@ -14,12 +14,16 @@ use crate::format::{
 };
 use crate::path::{normalize_lookup_path, parent_path, validate_archive_path};
 
+type EntryLookup = HashMap<String, usize>;
+type DirectoryChildren = HashMap<String, Vec<usize>>;
+type ValidatedIndex = (EntryLookup, DirectoryChildren);
+
 pub struct Archive {
     file: Mutex<File>,
     header: Header,
     index: ArchiveIndex,
-    lookup: HashMap<String, usize>,
-    children: HashMap<String, Vec<usize>>,
+    lookup: EntryLookup,
+    children: DirectoryChildren,
 }
 
 impl Archive {
@@ -337,10 +341,7 @@ fn validate_header(header: Header, file_len: u64) -> Result<()> {
     Ok(())
 }
 
-fn validate_index(
-    index: &ArchiveIndex,
-    header: Header,
-) -> Result<(HashMap<String, usize>, HashMap<String, Vec<usize>>)> {
+fn validate_index(index: &ArchiveIndex, header: Header) -> Result<ValidatedIndex> {
     if index.version != header.version || index.chunk_size != header.chunk_size {
         return Err(Error::InvalidFormat(
             "header and index metadata disagree".into(),
@@ -348,7 +349,7 @@ fn validate_index(
     }
 
     let mut lookup = HashMap::with_capacity(index.entries.len());
-    let mut children: HashMap<String, Vec<usize>> = HashMap::new();
+    let mut children = DirectoryChildren::new();
     let mut next_payload_offset = HEADER_SIZE as u64;
     let mut previous_path: Option<&str> = None;
 
