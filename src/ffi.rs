@@ -53,7 +53,10 @@ pub unsafe extern "C" fn zstf_archive_open(
 ) -> c_int {
     ffi_call(|| {
         if path.is_null() || out_handle.is_null() {
-            return fail(ZSTF_ERR_INVALID_ARGUMENT, "null pointer passed to zstf_archive_open");
+            return fail(
+                ZSTF_ERR_INVALID_ARGUMENT,
+                "null pointer passed to zstf_archive_open",
+            );
         }
         *out_handle = ptr::null_mut();
         let path = match CStr::from_ptr(path).to_str() {
@@ -296,12 +299,7 @@ pub unsafe extern "C" fn zstf_last_error(buffer: *mut c_char, capacity: usize) -
     })
 }
 
-unsafe fn copy_bytes(
-    bytes: &[u8],
-    buffer: *mut u8,
-    capacity: usize,
-    out_len: *mut usize,
-) -> c_int {
+unsafe fn copy_bytes(bytes: &[u8], buffer: *mut u8, capacity: usize, out_len: *mut usize) -> c_int {
     if out_len.is_null() {
         return fail(ZSTF_ERR_INVALID_ARGUMENT, "null output length pointer");
     }

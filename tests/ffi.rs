@@ -23,11 +23,17 @@ fn ffi_exposes_index_and_random_reads() {
 
     let path = CString::new(archive_path.to_str().unwrap()).unwrap();
     let mut handle: *mut ZstfArchiveHandle = ptr::null_mut();
-    assert_eq!(unsafe { zstf_archive_open(path.as_ptr(), &mut handle) }, ZSTF_OK);
+    assert_eq!(
+        unsafe { zstf_archive_open(path.as_ptr(), &mut handle) },
+        ZSTF_OK
+    );
     assert!(!handle.is_null());
 
     let mut count = 0_usize;
-    assert_eq!(unsafe { zstf_archive_entry_count(handle, &mut count) }, ZSTF_OK);
+    assert_eq!(
+        unsafe { zstf_archive_entry_count(handle, &mut count) },
+        ZSTF_OK
+    );
     assert_eq!(count, 2);
 
     let first_path = entry_path(handle, 0);
@@ -76,7 +82,10 @@ fn ffi_exposes_index_and_random_reads() {
 fn ffi_reports_errors_without_unwinding() {
     let missing = CString::new("/definitely/missing/archive.zstf").unwrap();
     let mut handle: *mut ZstfArchiveHandle = ptr::null_mut();
-    assert_ne!(unsafe { zstf_archive_open(missing.as_ptr(), &mut handle) }, ZSTF_OK);
+    assert_ne!(
+        unsafe { zstf_archive_open(missing.as_ptr(), &mut handle) },
+        ZSTF_OK
+    );
     assert!(handle.is_null());
 
     let needed = unsafe { zstf_last_error(ptr::null_mut(), 0) };
@@ -84,9 +93,7 @@ fn ffi_reports_errors_without_unwinding() {
     let mut error = vec![0_i8; needed + 1];
     let reported = unsafe { zstf_last_error(error.as_mut_ptr(), error.len()) };
     assert_eq!(reported, needed);
-    let message = unsafe { CStr::from_ptr(error.as_ptr()) }
-        .to_str()
-        .unwrap();
+    let message = unsafe { CStr::from_ptr(error.as_ptr()) }.to_str().unwrap();
     assert!(!message.is_empty());
 }
 
