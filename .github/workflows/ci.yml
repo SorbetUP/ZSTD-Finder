@@ -39,6 +39,24 @@ jobs:
       - run: cargo test --all-targets --all-features
       - run: cargo test --release --all-targets --all-features
 
+  native-macos:
+    name: native macOS bridge
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release
+      - name: Validate C header
+        run: clang -fsyntax-only -x c include/zstd_finder.h
+      - name: Type-check Swift bridge
+        run: |
+          xcrun swiftc \
+            -typecheck \
+            -parse-as-library \
+            -import-objc-header include/zstd_finder.h \
+            macos/Shared/ZSTFArchiveBridge.swift
+
   docs:
     name: docs
     runs-on: ubuntu-latest
