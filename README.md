@@ -63,6 +63,14 @@ the Zstd compression level.
 See [`docs/FORMAT.md`](docs/FORMAT.md) for the v1 on-disk format and
 [`docs/MACOS.md`](docs/MACOS.md) for the native integration boundary.
 
+## CI policy
+
+Every feature-branch push is gated by the portable archive tests, debug and
+release test suites, formatting, Clippy with warnings denied, Rustdoc, and the
+macOS 26 native FSKit/C/Swift compatibility checks. The random-access tests
+explicitly verify that damage to an earlier chunk does not force a later chunk
+to be decoded or read.
+
 ## Installation status
 
 The V1 filesystem implementation and its extension metadata are present and are
