@@ -54,6 +54,7 @@ jobs:
           xcrun swiftc \
             -typecheck \
             -parse-as-library \
+            -target arm64-apple-macosx15.4 \
             -framework FSKit \
             -import-objc-header include/zstd_finder.h \
             macos/Shared/ZSTFArchiveBridge.swift \
